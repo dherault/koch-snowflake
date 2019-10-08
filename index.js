@@ -3,6 +3,8 @@ const _ = canvas.getContext('2d')
 
 let width = canvas.width = window.innerWidth
 let height = canvas.height = window.innerHeight
+const displayRatio = height / width
+
 let xMouse = 0
 let yMouse = 0
 let xWindow = 0
@@ -76,6 +78,7 @@ function draw() {
 document.addEventListener('mousemove', event => {
   xMouse = event.clientX * width / canvas.width + xWindow
   yMouse = event.clientY * height / canvas.height + yWindow
+
   draw()
 })
 
@@ -83,17 +86,20 @@ canvas.addEventListener('wheel', event => {
   event.preventDefault()
 
   const zoom = 1 + event.deltaY * 0.0006
-  width = width * zoom
-  height = height * zoom
-  xWindow = xMouse - (xMouse - xWindow) * zoom
-  yWindow = yMouse - (yMouse - yWindow) * zoom
 
-  width = Math.max(0, Math.min(canvas.width, width))
-  height = Math.max(0, Math.min(canvas.height, height))
-  xWindow = Math.max(0, Math.min(canvas.width - width, xWindow))
-  yWindow = Math.max(0, Math.min(canvas.height - height, yWindow))
+  width = Math.max(0, Math.min(canvas.width, width * zoom))
+  height = width * displayRatio
+  xWindow = Math.max(0, Math.min(canvas.width - width, xMouse - (xMouse - xWindow) * zoom))
+  yWindow = Math.max(0, Math.min(canvas.height - height, yMouse - (yMouse - yWindow) * zoom))
 
   draw()
 })
 
 window.addEventListener('load', draw)
+
+/*
+  To prevent underflow:
+  - Save the zoom state and dezoom as a time reversal. The user has no control on the dezooming. Depends on memory
+  - Zoom toward a specific point continously. Depends on memory
+  - Zoom only forward. Independant of memory
+*/
