@@ -9,6 +9,7 @@ let xMouse = 0
 let yMouse = 0
 let xWindow = 0
 let yWindow = 0
+let isDezooming = false
 
 const piByThree = Math.PI / 3
 const xStart = canvas.width / 3
@@ -26,6 +27,12 @@ function scaleY(y) {
 }
 
 function triangle(_, n, x, y, l, a = 0) {
+  if (!isDezooming && l < 1e-11) {
+    dezoomToStart()
+
+    return
+  }
+
   const s = l / (2 * (1 + Math.cos(piByThree)))
 
   const x1 = x + s * Math.cos(a)
@@ -75,26 +82,50 @@ function draw() {
   _.stroke()
 }
 
-document.addEventListener('mousemove', event => {
+function mouseMoveListener(event) {
   xMouse = event.clientX * width / canvas.width + xWindow
   yMouse = event.clientY * height / canvas.height + yWindow
 
   draw()
-})
+}
 
-canvas.addEventListener('wheel', event => {
+function wheelListener(event) {
   event.preventDefault()
 
-  const zoom = 1 + event.deltaY * 0.0006
+  isDezooming = false
 
-  width = Math.max(0, Math.min(canvas.width, width * zoom))
-  height = width * displayRatio
-  xWindow = Math.max(0, Math.min(canvas.width - width, xMouse - (xMouse - xWindow) * zoom))
-  yWindow = Math.max(0, Math.min(canvas.height - height, yMouse - (yMouse - yWindow) * zoom))
-
+  zoom(1 + event.deltaY * 0.0006)
   draw()
-})
+}
 
+function zoom(factor) {
+  width = Math.max(0, Math.min(canvas.width, width * factor))
+  height = width * displayRatio
+  xWindow = Math.max(0, Math.min(canvas.width - width, xMouse - (xMouse - xWindow) * factor))
+  yWindow = Math.max(0, Math.min(canvas.height - height, yMouse - (yMouse - yWindow) * factor))
+}
+
+function dezoomToStart() {
+  if (isDezooming || width === canvas.width) return
+
+  isDezooming = true
+  canvas.removeEventListener('wheel', wheelListener)
+  document.removeEventListener('mousemove', mouseMoveListener)
+
+  let intervalId = setInterval(() => {
+    zoom(1.01)
+    draw()
+
+    if (width === canvas.width) {
+      clearInterval(intervalId)
+      canvas.addEventListener('wheel', wheelListener)
+      document.addEventListener('mousemove', mouseMoveListener)
+    }
+  }, 6)
+}
+
+document.addEventListener('mousemove', mouseMoveListener)
+canvas.addEventListener('wheel', wheelListener)
 window.addEventListener('load', draw)
 
 /*
