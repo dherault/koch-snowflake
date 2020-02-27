@@ -112,7 +112,7 @@ function dezoomToStart() {
   canvas.removeEventListener('wheel', wheelListener)
   document.removeEventListener('mousemove', mouseMoveListener)
 
-  let intervalId = setInterval(() => {
+  const intervalId = setInterval(() => {
     zoom(1.01)
     draw()
 
